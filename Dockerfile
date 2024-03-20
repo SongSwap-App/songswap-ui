@@ -2,6 +2,8 @@ FROM node:20.8-alpine as build
 
 WORKDIR /app/
 
+ENV REACT_APP_SERVER_HOST_URL="https://apisongswap.azurewebsites.net"
+
 COPY aspnetcore-https.js ./
 COPY aspnetcore-react.js ./
 
