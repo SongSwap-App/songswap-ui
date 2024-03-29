@@ -16,6 +16,12 @@ const PlaylistImport = ({ playlist }) => {
     const [progress, setProgress] = useState({status: '', now: 0});
     const [isImporting, setIsImporting] = useState(false);
     const [abortController, setAbortController] = useState(new AbortController());
+    const [importBtnClassName, setImportBtnClassName] = useState('btn btn-primary import');
+    const [importBtnInner, setImportBtnInner] = useState('Import');
+    const [importBtnDisabled, setImportBtnDisabled] = useState(false);
+    const [doneBtnDisplay, setDoneBtnDisplay] = useState('none');
+    const [cancelBtnDisplay, setCancelBtnDisplay] = useState('block');
+    const [tracksDisplay, setTracksDisplay] = useState('none');
 
 
     // Receive messages from the SignalR hub
@@ -27,13 +33,12 @@ const PlaylistImport = ({ playlist }) => {
 
     useEffect(() => {
         if (progress && progress.status === "done") {
-            document.getElementById(`done-${playlist.id}`).style.display = 'block';
-            const importBtn = document.getElementById(`import-${playlist.id}`);
-            importBtn.className = "btn btn-success import";
-            importBtn.innerHTML = "Done";
-            importBtn.disabled = true;
+            setDoneBtnDisplay('block');
+            setImportBtnClassName('btn btn-success import');
+            setImportBtnInner('Done');
+            setImportBtnDisabled(true);
+            setCancelBtnDisplay('none');
             document.getElementById("bar-" + playlist.id).firstChild.className = "progress-bar bg-success";
-            document.getElementById("cancel-" + playlist.id).style.display = 'none';
         }
     }, [progress, playlist.id]);
 
@@ -60,6 +65,8 @@ const PlaylistImport = ({ playlist }) => {
                 setProgress({ status: '', now: 0 });
             } else {
                 console.error('Error fetching data:', error);
+                setProgress({ status: 'error', now: 100 });
+                setIsImporting(false);
             }
         } finally {
             setAbortController(new AbortController());
@@ -72,11 +79,10 @@ const PlaylistImport = ({ playlist }) => {
 
 
     const toggleShowHideTracks = async () => {
-        const trackListElement = document.getElementById(playlist.id);
-        if (trackListElement.style.display === "none") {
-            trackListElement.style.display = "block";
+        if (tracksDisplay === 'none') {
+            setTracksDisplay('block');
         } else {
-            trackListElement.style.display = "none";
+            setTracksDisplay('none');
         }
         if (!tracks && loading) {
             try {
@@ -135,6 +141,9 @@ const PlaylistImport = ({ playlist }) => {
             case "done":
                 message = `All done! Check your ${user.destination}`;
                 break;
+            case "error":
+                message = 'Something went wrong...'
+                break;
             default:
                 message = "Importing playlist...";
                 break;
@@ -151,8 +160,8 @@ const PlaylistImport = ({ playlist }) => {
                     <h3>{progressMessage()}</h3>
                     <ProgressBar id={"bar-" + playlist.id} animated variant='success' now={progress.now} />
                     <div className="row popup-buttons">
-                        <button id={"cancel-" + playlist.id} className="btn btn-danger" onClick={cancelImport}>Cancel</button>
-                        <button id={"done-" + playlist.id} className="btn btn-success" style={{ display: "none" }} onClick={() => { setIsImporting(false) }}>Done</button>
+                        <button className="btn btn-danger" style={{ display: cancelBtnDisplay }} onClick={cancelImport}>Cancel</button>
+                        <button className="btn btn-success" style={{ display: doneBtnDisplay }} onClick={() => { setIsImporting(false) }}>Done</button>
                     </div>
                 </div>
             </Popup>
@@ -165,10 +174,10 @@ const PlaylistImport = ({ playlist }) => {
                     <h5>Total Items: {playlist.totalItems}</h5>
                 </div>
                 <div className="col-">
-                    <button id={"import-" + playlist.id} className="btn btn-primary import" onClick={importPlaylist}>Import</button>
+                    <button className={importBtnClassName} onClick={importPlaylist} disabled={importBtnDisabled}>{importBtnInner}</button>
                 </div>
             </div>
-            <div id={playlist.id} style={{ display: "none" }} >
+            <div id={playlist.id} style={{ display: tracksDisplay }} >
                 {renderTracks()}
             </div>
         </div>
